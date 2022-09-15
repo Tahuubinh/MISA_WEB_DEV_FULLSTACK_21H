@@ -115,6 +115,7 @@ function validateDateInput(input) {
 }
 
 function validateEmployeeInformation(){
+    let isValid = 1;
     for (const input of $('#dlgEmployeeDetail input[required]')){
         inputObject = $(input)
         if (!inputObject.val()) {
@@ -122,8 +123,10 @@ function validateEmployeeInformation(){
             inputObject.addClass("input--error");
             inputObject.attr('title', "Thông tin này không được phép để trống");
             inputObject.siblings(".notice").html("Thông tin này không được phép để trống").css('color','red');
-            inputObject.focus();
-            return 0;
+            if (isValid){
+                inputObject.focus();
+            }
+            isValid = 0;
             //     focusFlag = 0
             // }
         } else {
@@ -136,8 +139,10 @@ function validateEmployeeInformation(){
                     inputObject.addClass("input--error");
                     inputObject.attr('title', "Email không đúng định dạng.");
                     inputObject.siblings(".notice").html("Email không đúng định dạng.").css('color','red');
-                    inputObject.focus();
-                    return 0;
+                    if (isValid){
+                        inputObject.focus();
+                    }
+                    isValid = 0;
                 } else {
                     inputObject.removeClass("input--error");
                     inputObject.removeAttr('title', "Email không đúng định dạng.");
@@ -147,7 +152,7 @@ function validateEmployeeInformation(){
         }
     }
     
-    return 1;
+    return isValid;
 }
 
 /**

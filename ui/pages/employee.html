@@ -48,7 +48,7 @@
                 </div>
                 <div class="page__toolbar">
                     <div class="page__toolbar--left">
-                        <input id="searchInput" type="text" class="input input__icon input__icon--search">
+                        <input id="searchInput" type="text" class="input input__icon input__icon--search" title="Tìm kiếm theo mã hoặc tên">
                         <select name="departmentComboBox" id="departmentComboBox" class="combo-box">
                             <option value="">Tất cả phòng ban</option>
                         </select>
@@ -127,7 +127,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="table__paging">
+                    <div id = "paging" class="table__paging">
                         <div class="table__paging--left">
                             Hiển thị <b>01-10/200</b> nhân viên
                         </div>
@@ -135,22 +135,23 @@
                             <button class="paging__button paging__button--first"></button>
                             <button class="paging__button paging__button--prev"></button>
                             <div class="paging__button--group">
-                                <button class="paging__number">1</button>
-                                <button class="paging__number">2</button>
+                                <button class="paging__number paging__number--selected">1</button>
+                                <!-- <button class="paging__number">2</button>
                                 <button class="paging__number paging__number--selected">3</button>
                                 <button class="paging__number">4</button>
                                 <button class="paging__number">5</button>
-                                <button class="paging__number">6</button>
+                                <button class="paging__number">6</button> -->
                             </div>
                             <button class="paging__button paging__button--next"></button>
                             <button class="paging__button paging__button--last"></button>
                         </div>
                         <div class="table__paging--right">
                             <select name="" class="combobox">
+                                <!-- <option value="0">Hiển thị tất cả</option> -->
                                 <option value="10">10 nhân viên/ trang</option>
-                                <option value="20">10 nhân viên/ trang</option>
-                                <option value="30">10 nhân viên/ trang</option>
-                                <option value="40">10 nhân viên/ trang</option>
+                                <option value="20" selected>20 nhân viên/ trang</option>
+                                <option value="50">50 nhân viên/ trang</option>
+                                <option value="100">100 nhân viên/ trang</option>
                             </select>
                         </div>
                     </div>

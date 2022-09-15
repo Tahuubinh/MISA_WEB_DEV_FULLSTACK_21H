@@ -3,7 +3,7 @@ const FIELD_ATTR = "field";
 
 // Số lượng button pag number tối đa hiển thị trên navigation
 const PAG_NUMBER_MAX_SIZE = 4;
-let pageMaxNumber = 1;
+let pageMaxNumber = 4;
 let pageMinNumber = PAG_NUMBER_MAX_SIZE;
 
 // 2 chế độ form ADD và EDIT
@@ -21,7 +21,7 @@ let keyword = null;
 let employee = null;
 
 // Số lượng tối đa dòng hiển thị trên bảng trên một trang
-let pageSize;
+let pageSize = 20;
 let pagePrevSize;
 
 // Số thứ tự trang hiển thị hiện tại
@@ -33,12 +33,27 @@ let positionId = null;
 // Phòng ban đang được lựa chọn
 let departmentId = null;
 
+// Trang hiển thị đầu tiên ở phần chọn trang
+let firstPageNumber = 1;
+
+// Trang hiển thị cuối ở phần chọn trang
+let lastPageNumber = pageMaxNumber;
+
+// Trang được chọn
+let pageSelected = 1;
+
+// Tổng số trang
+let totalPage = 1;
+
+// Kiểm tra có phải thực hiện chọn trang
+let pageSelectMode = 0;
+
 $(document).ready(function() {
     // gán các sự kiện cho các element:
     initEvents();
 
     // Load dữ liệu:
-    loadData();
+    loadData(1);
     
     // Tải các phòng ban đưa vào combobox  
     loadDepartment();
@@ -49,89 +64,12 @@ $(document).ready(function() {
 
 var employeeId = null;
 formMode = "add";
-/**
- * Thực hiện load dữ liệu lên table
- * Author: NVMANH (26/08/2022)
- */
-function loadData() {
-    // Gọi api thực hiện lấy dữ liệu:
-    console.log("CALL AJAX !!!!");
-    $.ajax({
-        type: "GET",
-        async: false,
-        url: "http://localhost:35246/api/v1/Employees",
-        success: function(res) {
-            console.log("GET DATA DONE !!!!");
-            $("table#tbEmployeeList tbody").empty();
-            // Xử lý dữ liệu từng đối tượng:
-            var sort = 1;
-            let ths = $("table#tbEmployeeList thead th");
-            //debugger
-            for (const emp of res) {
-                // duyệt từng cột trong tiêu đề:
-                var trElement = $('<tr></tr>');
-                for (const th of ths) {
-                    //debugger
-                    // Lấy ra propValue tương ứng với các cột:
-                    const propValue = $(th).attr("propValue");
-
-                    const format = $(th).attr("format");
-                    // Lấy giá trị tương ứng với tên của propValue trong đối tượng:
-                    let value = null;
-                    if (propValue == "Sort")
-                        value = sort
-                    else
-                        value = emp[propValue];
-                    if (propValue == "WorkStatus"){
-                        value = formatWorkStatus(value)
-                    }
-                    else if (propValue == "Gender"){
-                        value = formatGender(value)
-                    }
-                    // if (propValue == "GenderName"){
-                    //     if (sort < 5){
-                    //         console.log(value);
-                    //     }
-                    // }
-                    let classAlign = "";
-                    switch (format) {
-                        case "date":
-                            value = formatDate(value);
-                            classAlign = "text-align--center";
-                            break;
-                        case "money":
-                            value = formatMoney(value);
-                            classAlign = "text-align--right";
-                            break;
-                        default:
-                            break;
-                    }
-
-                    // Tạo thHTML:
-                    let thHTML = `<td class='${classAlign}'>${value||""}</td>`;
-
-                    // Đẩy vào trHMTL:
-                    trElement.append(thHTML);
-                }
-                sort++;
-                $(trElement).data("id", emp.EmployeeId);
-                $(trElement).data("entity", emp);
-                $("table#tbEmployeeList tbody").append(trElement)
-            }
-        },
-        error: function(res) {
-            console.log(res);
-        }
-    });
-}
 
 /**
  * Tạo các sự kiện
  * Author: NVMANH ()
  */
-function initEvents() {
-    // Tạo gợi ý cho ô tìm kiếm theo mã hoặc tên
-    $("#searchInput").val("Tìm kiếm theo mã hoặc tên");
+ function initEvents() {
     // Xác định từ khóa và hiển thị hint nếu không có nội dung
     $("#searchInput").blur(function (e) { 
         if ($(this).val() == "") {
@@ -162,6 +100,46 @@ function initEvents() {
         loadData(1);
     })
 
+    $("#paging select").change(function(){
+        pagePrevSize = pageSize;
+        pageSize = parseInt($(this).val());
+        loadData(1);
+    });
+
+    $(document).on("click", "#paging .paging__number", function(){ 
+        pageSelected = parseInt($(this).text());
+        pageSelectMode = 1;
+        loadData(pageSelected);
+    });
+
+    $('.paging__button--first').click(function(){
+        firstPageNumber = 1;
+        lastPageNumber = Math.min(totalPage, PAG_NUMBER_MAX_SIZE);
+        resetNumberFooter();
+    });
+
+    $('.paging__button--last').click(function(){
+        lastPageNumber = totalPage;
+        firstPageNumber = Math.max(1, lastPageNumber - PAG_NUMBER_MAX_SIZE + 1);
+        resetNumberFooter();
+    });
+
+    $('.paging__button--prev').click(function(){
+        firstPageNumber = Math.max(1, firstPageNumber - PAG_NUMBER_MAX_SIZE);
+        lastPageNumber = Math.min(totalPage, firstPageNumber + PAG_NUMBER_MAX_SIZE - 1);
+        resetNumberFooter();
+    });
+
+    $('.paging__button--next').click(function(){
+        lastPageNumber = Math.min(totalPage, lastPageNumber + PAG_NUMBER_MAX_SIZE);
+        firstPageNumber = Math.max(1, lastPageNumber - PAG_NUMBER_MAX_SIZE + 1);
+        resetNumberFooter();
+    });
+
+    // $("#paging .paging__number").click(function() {
+    //     alert(1);
+    // });
+
     $("#btnDelete").click(function() {
         $("#dlgDialog3").show();
     });
@@ -175,7 +153,7 @@ function initEvents() {
             success: function(response) {
                 $("#dlgDialog3").hide();
                 // Load lại dữ liệu:
-                loadData();
+                loadData(1);
             }
         });
     });
@@ -242,7 +220,7 @@ function initEvents() {
     });
 
     $("#btnRefresh").click(function(){
-        loadData();
+        loadData(1);
     })
 
     $(".dialog__button--close").click(function() {
@@ -273,6 +251,7 @@ function initEvents() {
             // Nếu có value thì bỏ cảnh báo lỗi:
             $(this).removeClass("input--error");
             $(this).removeAttr('title');
+            $(this).siblings(".notice").html("");
         }
     })
 
@@ -288,11 +267,180 @@ function initEvents() {
             console.log("Email đúng định dạng");
             $(this).removeClass("input--error");
             $(this).removeAttr('title');
+            $(this).siblings(".notice").html("");
         }
     })
 
 
 }
+
+/**
+ * Thực hiện load dữ liệu lên table
+ * Author: NVMANH (26/08/2022)
+ */
+// function loadData() {
+//     // Gọi api thực hiện lấy dữ liệu:
+//     console.log("CALL AJAX !!!!");
+//     $.ajax({
+//         type: "GET",
+//         async: false,
+//         url: "http://localhost:35246/api/v1/Employees",
+//         success: function(res) {
+//             console.log("GET DATA DONE !!!!");
+//             $("table#tbEmployeeList tbody").empty();
+//             // Xử lý dữ liệu từng đối tượng:
+//             var sort = 1;
+//             let ths = $("table#tbEmployeeList thead th");
+//             //debugger
+//             for (const emp of res) {
+//                 // duyệt từng cột trong tiêu đề:
+//                 var trElement = $('<tr></tr>');
+//                 for (const th of ths) {
+//                     //debugger
+//                     // Lấy ra propValue tương ứng với các cột:
+//                     const propValue = $(th).attr("propValue");
+
+//                     const format = $(th).attr("format");
+//                     // Lấy giá trị tương ứng với tên của propValue trong đối tượng:
+//                     let value = null;
+//                     if (propValue == "Sort")
+//                         value = sort
+//                     else
+//                         value = emp[propValue];
+//                     if (propValue == "WorkStatus"){
+//                         value = formatWorkStatus(value)
+//                     }
+//                     else if (propValue == "Gender"){
+//                         value = formatGender(value)
+//                     }
+//                     // if (propValue == "GenderName"){
+//                     //     if (sort < 5){
+//                     //         console.log(value);
+//                     //     }
+//                     // }
+//                     let classAlign = "";
+//                     switch (format) {
+//                         case "date":
+//                             value = formatDate(value);
+//                             classAlign = "text-align--center";
+//                             break;
+//                         case "money":
+//                             value = formatMoney(value);
+//                             classAlign = "text-align--right";
+//                             break;
+//                         default:
+//                             break;
+//                     }
+
+//                     // Tạo thHTML:
+//                     let thHTML = `<td class='${classAlign}'>${value||""}</td>`;
+
+//                     // Đẩy vào trHMTL:
+//                     trElement.append(thHTML);
+//                 }
+//                 sort++;
+//                 $(trElement).data("id", emp.EmployeeId);
+//                 $(trElement).data("entity", emp);
+//                 $("table#tbEmployeeList tbody").append(trElement)
+//             }
+//         },
+//         error: function(res) {
+//             console.log(res);
+//         }
+//     });
+// }
+
+function loadData(pageNumber) {
+    // Phần lọc trong api
+    const filter = `keyword=${keyword||''}&positionId=${positionId||''}&departmentId=${departmentId||''}&pageSize=${pageSize||''}&pageNumber=${pageNumber}`;
+
+    // Gọi api thực hiện lấy dữ liệu:
+    console.log("CALL AJAX !!!!");
+    $.ajax({
+        type: "GET",
+        async: false,
+        url: "http://localhost:35246/api/v1/Employees/filter?" + filter,
+        success: function(res) {
+            const data = res["Data"];
+            const totalRecord = parseInt(res["TotalRecord"]||0);
+            totalPage = Math.ceil(totalRecord / pageSize);
+            console.log("GET DATA DONE !!!!");
+            $("table#tbEmployeeList tbody").empty();
+            // Xử lý dữ liệu từng đối tượng:
+            var sort = pageSize * pageNumber - pageSize + 1;
+            let ths = $("table#tbEmployeeList thead th");
+            //debugger
+            for (const emp of data) {
+                // duyệt từng cột trong tiêu đề:
+                var trElement = $('<tr></tr>');
+                for (const th of ths) {
+                    //debugger
+                    // Lấy ra propValue tương ứng với các cột:
+                    const propValue = $(th).attr("propValue");
+
+                    const format = $(th).attr("format");
+                    // Lấy giá trị tương ứng với tên của propValue trong đối tượng:
+                    let value = null;
+                    if (propValue == "Sort")
+                        value = sort
+                    else
+                        value = emp[propValue];
+                    if (propValue == "WorkStatus"){
+                        value = formatWorkStatus(value)
+                    }
+                    else if (propValue == "Gender"){
+                        value = formatGender(value)
+                    }
+                    // if (propValue == "GenderName"){
+                    //     if (sort < 5){
+                    //         console.log(value);
+                    //     }
+                    // }
+                    let classAlign = "";
+                    switch (format) {
+                        case "date":
+                            value = formatDate(value);
+                            classAlign = "text-align--center";
+                            break;
+                        case "money":
+                            value = formatMoney(value);
+                            classAlign = "text-align--right";
+                            break;
+                        default:
+                            break;
+                    }
+
+                    // Tạo thHTML:
+                    let thHTML = `<td class='${classAlign}'>${value||""}</td>`;
+
+                    // Đẩy vào trHMTL:
+                    trElement.append(thHTML);
+                }
+                sort++;
+                $(trElement).data("id", emp.EmployeeId);
+                $(trElement).data("entity", emp);
+                $("table#tbEmployeeList tbody").append(trElement)
+            }
+
+            // Chỉnh footer, nếu vừa chọn trang thì không chỉnh
+            if (!pageSelectMode){
+                firstPageNumber = 1;
+                lastPageNumber = Math.min(totalPage, pageMaxNumber);
+            } else {
+                pageSelectMode = 0;
+            }
+            resetNumberFooter();
+            
+            $('.table__paging--left').html("Hiển thị <b>" + (pageSize * pageNumber - pageSize + 1) + "-"+ Math.min(pageSize * pageNumber, totalRecord) 
+                +"/"+ totalRecord +"</b> nhân viên");
+
+        },
+        error: function(res) {
+            console.log(res);
+        }
+    });
+}
+
 var count = 0;
 
 function saveData() {
@@ -330,7 +478,7 @@ function saveData() {
             success: function(response) {
                 alert("Sửa dữ liệu thành công!");
                 // load lại dữ liệu:
-                loadData();
+                loadData(1);
                 // Ẩn form chi tiết:
                 $("#dlgEmployeeDetail").hide();
 
@@ -362,7 +510,7 @@ function saveData() {
             success: function(response) {
                 alert("Thêm mới dữ liệu thành công!");
                 // load lại dữ liệu:
-                loadData();
+                loadData(1);
                 // Ẩn form chi tiết:
                 $("#dlgEmployeeDetail").hide();
 
@@ -535,5 +683,20 @@ function loadPosition() {
             alert("Tải dữ liệu vị trí không thành công");
         }
     })
+}
+
+/**
+ * Cập nhật lại các trang để chọn
+ */
+function resetNumberFooter() {
+    let pageNumberGroup = $('.paging__button--group')
+    pageNumberGroup.empty();
+    for(let i = firstPageNumber; i <= lastPageNumber; ++i) {
+        if (i == pageSelected){
+            pageNumberGroup.append(`<div button class="paging__number paging__number--selected">${i}</div>`);
+            continue;
+        }
+        pageNumberGroup.append(`<div button class="paging__number">${i}</div>`);
+    }
 }
 
