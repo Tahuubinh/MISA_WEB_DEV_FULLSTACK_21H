@@ -5,6 +5,8 @@
  * Author: NVMANH (26/08/2022) THVUONG (27/08/2022)
  */
  function formatDate(value) {
+    if (!value)
+        return "";
     const dateValue = new Date(value);
 
     // Lấy ra ngày:

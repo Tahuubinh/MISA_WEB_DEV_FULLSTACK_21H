@@ -220,6 +220,7 @@ formMode = "add";
     });
 
     $("#btnRefresh").click(function(){
+        pageSelected = 1;
         loadData(1);
     })
 
@@ -403,7 +404,9 @@ function loadData(pageNumber) {
                             classAlign = "text-align--center";
                             break;
                         case "money":
-                            value = formatMoney(value);
+                            if (value > 0){
+                                value = formatMoney(value);
+                            }
                             classAlign = "text-align--right";
                             break;
                         default:
@@ -424,6 +427,7 @@ function loadData(pageNumber) {
 
             // Chỉnh footer, nếu vừa chọn trang thì không chỉnh
             if (!pageSelectMode){
+                pageSelected = 1;
                 firstPageNumber = 1;
                 lastPageNumber = Math.min(totalPage, pageMaxNumber);
             } else {
